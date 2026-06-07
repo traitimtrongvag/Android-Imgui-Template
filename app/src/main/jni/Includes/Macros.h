@@ -12,7 +12,6 @@ void hook(void *offset, void* ptr, void **orig)
     DobbyHook(offset, ptr, orig);
 }
 
-//#define HOOK(offset, ptr, orig) DobbyHook((void *)getAbsoluteAddress(TARGET_LIB, offset), (void *)ptr, (void **)&orig)
 #define HOOK(offset, ptr, orig) \
     DobbyHook((void*)getAbsoluteAddress(TARGET_LIB, offset), \
               (void*)ptr, \
@@ -35,66 +34,41 @@ std::vector<uint64_t> offsetVector;
 // Patching a offset without switch.
 // Modified patchOffset function
 void patchOffset(const char* libName, uintptr_t offset, std::string hex, bool isOn) {
-    // Convert library name to KittyMemory::ProcMap
     KittyMemory::ProcMap map;
-    // Implement the actual method to fill the map for the given library name
-    // For demonstration purposes, we'll assume you have a way to do this
-    // Example: map = someFunctionToGetProcMap(libName);
-
     MemoryPatch patch = MemoryPatch::createWithHex(map, offset, hex);
 
-    // Check if offset exists in the offsetVector
     if (std::find(offsetVector.begin(), offsetVector.end(), offset) != offsetVector.end()) {
-        // //(OBFUSCATE("Already exists"));
         std::vector<uint64_t>::iterator itr = std::find(offsetVector.begin(), offsetVector.end(), offset);
-        patch = memoryPatches[std::distance(offsetVector.begin(), itr)]; // Get index of memoryPatches vector
+        patch = memoryPatches[std::distance(offsetVector.begin(), itr)];
     } else {
         memoryPatches.push_back(patch);
         offsetVector.push_back(offset);
-        // LOGI(OBFUSCATE("Added"));
     }
 
-    if (!patch.isValid()) {
-        //(OBFUSCATE("Failing offset: 0x%llu, please re-check the hex"), offset);
-        return;
-    }
+    if (!patch.isValid()) return;
     if (isOn) {
-        if (!patch.Modify()) {
-            //(OBFUSCATE("Something went wrong while patching this offset: 0x%llu"), offset);
-        }
+        patch.Modify();
     } else {
-        if (!patch.Restore()) {
-            //(OBFUSCATE("Something went wrong while restoring this offset: 0x%llu"), offset);
-        }
+        patch.Restore();
     }
 }
 
 void patchOffsetSym(uintptr_t absolute_address, std::string hexBytes, bool isOn) {
     MemoryPatch patch = MemoryPatch::createWithHex(absolute_address, hexBytes);
 
-    // Check if offset exists in the offsetVector
     if (std::find(offsetVector.begin(), offsetVector.end(), absolute_address) != offsetVector.end()) {
-        // //(OBFUSCATE("Already exists"));
         std::vector<uint64_t>::iterator itr = std::find(offsetVector.begin(), offsetVector.end(), absolute_address);
-        patch = memoryPatches[std::distance(offsetVector.begin(), itr)]; // Get index of memoryPatches vector
+        patch = memoryPatches[std::distance(offsetVector.begin(), itr)];
     } else {
         memoryPatches.push_back(patch);
         offsetVector.push_back(absolute_address);
-        // LOGI(OBFUSCATE("Added"));
     }
 
-    if (!patch.isValid()) {
-        //(OBFUSCATE("Failing offset: 0x%llu, please re-check the hex"), absolute_address);
-        return;
-    }
+    if (!patch.isValid()) return;
     if (isOn) {
-        if (!patch.Modify()) {
-            //(OBFUSCATE("Something went wrong while patching this offset: 0x%llu"), absolute_address);
-        }
+        patch.Modify();
     } else {
-        if (!patch.Restore()) {
-            //(OBFUSCATE("Something went wrong while restoring this offset: 0x%llu"), absolute_address);
-        }
+        patch.Restore();
     }
 }
 

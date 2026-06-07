@@ -45,7 +45,6 @@ char        g_s[512] = {0};       /* Key input buffer - shared with the UI      
 /* Declared in Main.cpp; updated here after login succeeds / fails */
 extern bool  isLogin;
 extern bool  showLoginSuccess;
-extern float loginSuccessTimer;
 
 
 /* -------------------------------------------------------------------------

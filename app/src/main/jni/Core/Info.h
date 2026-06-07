@@ -145,10 +145,9 @@ inline void checkAutoLoginAt7h() {
             while (true) {
                 err = Login(g_s);
                 if (err == std::string(oxorany("OK"))) {
-                    isLogin = bValid;
+                    isLogin          = bValid;
                     saveKey();
                     showLoginSuccess = true;
-                    loginSuccessTimer = 0.0f;
                     break;
                 }
                 std::this_thread::sleep_for(std::chrono::seconds(1));

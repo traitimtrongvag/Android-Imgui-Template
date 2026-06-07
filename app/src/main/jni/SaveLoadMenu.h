@@ -10,7 +10,6 @@
 #include "Global.h"
 
 static const unsigned char AES_SECRET_KEY[32] = {0x13, 0x2A, 0xB4, 0x55, 0x88, 0x0F, 0xAA, 0x3E, 0x17, 0x26, 0x9B, 0xCD, 0xEF, 0x1D, 0x23, 0x47, 0x59, 0x68, 0x70, 0x81, 0x9A, 0xAB, 0xBC, 0xCD, 0xDE, 0xEF, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6}; // This is the private key that can be changed to your own key.
-static const size_t AES_KEY_SIZE = 32;
 static const size_t AES_IV_SIZE = 16;
 
 std::vector<unsigned char> AES_Encrypt(const std::string& plaintext) {
@@ -58,7 +57,7 @@ inline std::string getConfigPath() {
     jvm->AttachCurrentThread(&env, nullptr);
     jobject context = getApplicationContext();
     std::string package = getPackageName(env, context);
-    std::string path = "/storage/emulated/0/Android/data/" + package + "/user_config";
+    std::string path = std::string(oxorany("/storage/emulated/0/Android/data/")) + package + oxorany("/user_config");
     jvm->DetachCurrentThread();
     return path;
 }
@@ -113,6 +112,7 @@ bool Check_File(std::string FilePath) {
 }
 
 void SaveLoad_GUI() {
+    static constexpr float kPopupButtonWidth = 120.0f;
     if (FoundProfile) {
         ImGui::Text(static_cast<const char*>(OBFUSCATE("A saved menu already exists")));
     } else {
@@ -145,7 +145,7 @@ void SaveLoad_GUI() {
             ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
             ImGui::Text("%s", text);
             ImGui::Spacing();
-            float buttonWidth = 120.0f;
+            float buttonWidth = kPopupButtonWidth;
             ImGui::SetCursorPosX((windowWidth - buttonWidth) * 0.5f);
             if (ImGui::Button(OBFUSCATE("OK"), ImVec2(buttonWidth, 0))) {
                 showSaveSuccessPopup = false;
@@ -165,7 +165,7 @@ void SaveLoad_GUI() {
             ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
             ImGui::Text("%s", text);
             ImGui::Spacing();
-            float buttonWidth = 120.0f;
+            float buttonWidth = kPopupButtonWidth;
             float totalButtonWidth = buttonWidth * 2 + ImGui::GetStyle().ItemSpacing.x;
             ImGui::SetCursorPosX((windowWidth - totalButtonWidth) * 0.5f);
             if (ImGui::Button(OBFUSCATE("Yes"), ImVec2(buttonWidth, 0))) {
@@ -194,7 +194,7 @@ void SaveLoad_GUI() {
             ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
             ImGui::Text("%s", text);
             ImGui::Spacing();
-            float buttonWidth = 120.0f;
+            float buttonWidth = kPopupButtonWidth;
             ImGui::SetCursorPosX((windowWidth - buttonWidth) * 0.5f);
             if (ImGui::Button(OBFUSCATE("OK"), ImVec2(buttonWidth, 0))) {
                 showDeleteSuccessPopup = false;

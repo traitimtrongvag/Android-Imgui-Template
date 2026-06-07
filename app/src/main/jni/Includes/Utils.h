@@ -15,9 +15,8 @@
 #include <cstdint>
 
 typedef unsigned long DWORD;
-static uintptr_t libBase;
 
-bool libLoaded = false;
+static bool libLoaded = false;
 
 DWORD findLibrary(const char *library) {
     char filename[0xFF] = {0},
@@ -50,15 +49,10 @@ DWORD findLibrary(const char *library) {
 }
 
 DWORD getAbsoluteAddress(const char *libraryName, DWORD relativeAddr) {
-    libBase = findLibrary(libraryName);
+    uintptr_t libBase = findLibrary(libraryName);
     if (libBase == 0)
         return 0;
     return (reinterpret_cast<DWORD>(libBase + relativeAddr));
-}
-
-
-jboolean isGameLibLoaded(JNIEnv *env, jobject thiz) {
-    return libLoaded;
 }
 
 bool isLibraryLoaded(const char *libraryName) {

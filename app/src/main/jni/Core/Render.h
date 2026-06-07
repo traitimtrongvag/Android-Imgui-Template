@@ -21,7 +21,7 @@ void Render(ImDrawList* draw) {
     if (!draw) return;
     
     char tmp_watermark[256];
-    std::sprintf(tmp_watermark, OBFUSCATE("Modded by Your Name - %.1f FPS"), ImGui::GetIO().Framerate);
+    std::sprintf(tmp_watermark, OBFUSCATE(MOD_AUTHOR " - %.1f FPS"), ImGui::GetIO().Framerate);
     
     float t = ImGui::GetTime();
     int r = int((std::sin(t * 0.25f + 0.0f) * 0.5f + 0.5f) * 255);

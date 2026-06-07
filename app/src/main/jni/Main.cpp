@@ -14,13 +14,9 @@
 #include <thread>
 #include <atomic>
 
-#include <nlohmann/json.hpp>
-#include <httplib.h>
-
 #include "AnAn/Call_Me.h"
 #include "Headers.h"
 
-#include "Remap.h"
 #include "SaveLoadMenu.h"
 #include "Global.h"
 #include "Logo.h"
@@ -31,22 +27,12 @@
 /////////////////////////////////////////////////////////////////////////////
 // Login / session state (file-scope)                                      //
 /////////////////////////////////////////////////////////////////////////////
-static bool  keyLoaded            = false;
 static bool  isLogin              = true;
 static bool  showLoginSuccess     = false;
-static float loginSuccessTimer    = 0.0f;
 static float progress             = 1.0f;
 static auto  startTime            = std::chrono::steady_clock::now();
 
-static bool  initialized          = false;
-static bool  popupOpened          = false;
-static bool  attemptedAutoLogin   = false;
-
-/////////////////////////////////////////////////////////////////////////////
-// Volume-key shortcut state                                               //
-/////////////////////////////////////////////////////////////////////////////
-static int   g_lastVolume         = -1;
-static bool  g_volumeCheckerInit  = false;
+static bool  attemptedAutoLogin   = false; 
 
 void ShowLoginSuccess() {
     ImGui::Begin(OBFUSCATE("Login Success"), nullptr,
@@ -58,7 +44,12 @@ void ShowLoginSuccess() {
     std::chrono::duration<float> elapsedTime = currentTime - startTime;
     const float countdownTime = 7.0f;
     progress = 1.0f - (elapsedTime.count() / countdownTime);
-    if (progress < 0.0f) progress = 0.0f;
+    if (progress <= 0.0f) {
+        progress         = 0.0f;
+        showLoginSuccess = false;
+        ImGui::End();
+        return;
+    }
 
     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0, 1, 0, 1));
     ImGui::ProgressBar(progress, ImVec2(200, 5));
@@ -125,7 +116,7 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         io.KeyMap[ImGuiKey_Home]       = 122;
         io.KeyMap[ImGuiKey_End]        = 123;
 
-        ImGui_ImplOpenGL3_Init(OBFUSCATE("#version 1.0"));
+        ImGui_ImplOpenGL3_Init(OBFUSCATE("#version 300 es"));
         ImGui::GetStyle().ScaleAllSizes(3.0f);
         LoadSaveLoadMenu();
         setup = true;
@@ -143,7 +134,9 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     /////////////////////////////////////////////////////////////////////////
     // Volume-key shortcut - poll every 200 ms                            //
     /////////////////////////////////////////////////////////////////////////
-    static float volumeCheckTimer = 0.0f;
+    static float volumeCheckTimer   = 0.0f;
+    static int   g_lastVolume       = -1;
+    static bool  g_volumeCheckerInit = false;
     volumeCheckTimer += io.DeltaTime;
     if (volumeCheckTimer >= 0.2f) {
         volumeCheckTimer = 0.0f;
@@ -190,6 +183,8 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         sessionInitialized = true;
     }
 
+    if (showLoginSuccess) ShowLoginSuccess();
+
     /////////////////////////////////////////////////////////////////////////
     // Login flow                                                          //
     /////////////////////////////////////////////////////////////////////////
@@ -202,7 +197,6 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         if (!attemptedAutoLogin) {
             attemptedAutoLogin = true;
             ImGui::OpenPopup(OBFUSCATE("##LoginPage"));
-            popupOpened = true;
 
             if (g_s[0] != '\0' && !isLoggingIn) {
                 isLoggingIn = true;
@@ -210,10 +204,9 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
                 loginThread = std::thread([&]() {
                     err = Login(g_s);
                     if (err == std::string(OBFUSCATE("OK"))) {
-                        isLogin           = bValid;
-                        showLoginSuccess  = true;
-                        loginSuccessTimer = 0.0f;
-                        popupOpened       = false;
+                        isLogin          = bValid;
+                        startTime        = std::chrono::steady_clock::now();
+                        showLoginSuccess = true;
                     }
                     isLoggingIn = false;
                 });
@@ -278,10 +271,10 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
                 loginThread = std::thread([&]() {
                     err = Login(g_s);
                     if (err == std::string(OBFUSCATE("OK"))) {
-                        isLogin           = bValid;
+                        isLogin          = bValid;
                         saveKey();
-                        showLoginSuccess  = true;
-                        loginSuccessTimer = 0.0f;
+                        startTime        = std::chrono::steady_clock::now();
+                        showLoginSuccess = true;
                         ImGui::CloseCurrentPopup();
                     }
                     isLoggingIn = false;
@@ -332,7 +325,6 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         /////////////////////////////////////////////////////////////////////
         // Main overlay (post-login)                                       //
         /////////////////////////////////////////////////////////////////////
-        popupOpened = false;
         initPublicIP();
         Render(ImGui::GetBackgroundDrawList());
 
@@ -363,15 +355,30 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         /////////////////////////////////////////////////////////////////////
         if (ShowMenu || menuAnimationProgress > 0.0f) {
             ImGui::OpenPopup(OBFUSCATE("##MenuMod"));
-
+			
+            ///////////////////////////////////////////////////////////
+            // Tab bar                                               //
+            ///////////////////////////////////////////////////////////
+            /* Tab definitions - add/remove entries here; numButtons
+               is derived automatically so no manual counter needed. */
+            static const ButtonData buttons[] = {
+                {OBFUSCATE(ICON_FA7_WRENCH      " Option 1"), 1},
+                {OBFUSCATE(ICON_FA7_FISH        " Option 2"), 2},
+                {OBFUSCATE(ICON_FA7_HAMMER      " Option 3"), 3},
+                {OBFUSCATE(ICON_FA7_BUG         " Option 4"), 4},
+                {OBFUSCATE(ICON_FA7_LEAF        " Option 5"), 5},
+                {OBFUSCATE(ICON_FA7_GEARS       " Setting"),  6},
+                {OBFUSCATE(ICON_FA7_CIRCLE_USER " About"),    7},
+            };			
             /* Compute clamped menu size relative to screen */
             ImVec2 displaySize       = io.DisplaySize;
             const float padding      = 20.0f;
             float desiredMenuHeight  = std::clamp(displaySize.y * 0.8f, 400.0f, displaySize.y * 0.9f);
             float maxMenuHeight      = displaySize.y * 0.9f;
 
-            /* Tab bar width: base 1100 px (fixed set of 7 tabs) */
-            ImVec2 menuSize = ImVec2(1100.0f, desiredMenuHeight);
+            /* Tab bar width: ~157 px per tab */
+            static constexpr int numButtons = (int)(sizeof(buttons) / sizeof(buttons[0]));
+            ImVec2 menuSize = ImVec2(numButtons * 157.0f, desiredMenuHeight);
             ImVec2 maxMenuSize(displaySize.x * 0.9f, maxMenuHeight);
 
             /* Clamp menu so it doesn't overflow the screen edges */
@@ -446,11 +453,11 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
                     }
 
                     /* Centred title text */
-                    ImVec2 textSize = ImGui::CalcTextSize(OBFUSCATE("Modded by Your Name"));
+                    ImVec2 textSize = ImGui::CalcTextSize(OBFUSCATE(MOD_AUTHOR));
                     ImVec2 textPos(
                         windowPos.x + (windowSize.x - textSize.x) * 0.5f,
                         windowPos.y + 24.0f);
-                    drawList->AddText(textPos, IM_COL32_WHITE, OBFUSCATE("Modded by Your Name"));
+                    drawList->AddText(textPos, IM_COL32_WHITE, OBFUSCATE(MOD_AUTHOR));
 
                     /* Red circular close button */
                     ImGui::SetCursorPos(ImVec2(40, 20));
@@ -469,24 +476,7 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
                     ImGui::PopStyleVar(2);
                     ImGui::Spacing();
                     ImGui::Separator();
-
-                    ///////////////////////////////////////////////////////////
-                    // Tab bar                                               //
-                    ///////////////////////////////////////////////////////////
-                    /* Tab definitions - add/remove entries here; numButtons
-                       is derived automatically so no manual counter needed. */
-                    static const ButtonData buttons[] = {
-                        {OBFUSCATE(ICON_FA7_WRENCH      " Option 1"), 1},
-                        {OBFUSCATE(ICON_FA7_FISH        " Option 2"), 2},
-                        {OBFUSCATE(ICON_FA7_HAMMER      " Option 3"), 3},
-                        {OBFUSCATE(ICON_FA7_BUG         " Option 4"), 4},
-                        {OBFUSCATE(ICON_FA7_LEAF        " Option 5"), 5},
-                        {OBFUSCATE(ICON_FA7_GEARS       " Setting"),  6},
-                        {OBFUSCATE(ICON_FA7_CIRCLE_USER " About"),    7},
-                    };
-                    /* Derived at compile time - no need to keep a separate counter */
-                    static constexpr int numButtons = (int)(sizeof(buttons) / sizeof(buttons[0]));
-
+    
                     float deltaTime     = io.DeltaTime;
                     float availableWidth = windowSize.x - 40.0f;
                     RenderTabBar(buttons, numButtons, easedProgress, deltaTime, availableWidth);
@@ -749,6 +739,11 @@ void* Init_Thread(void*) {
     return nullptr;
 }
 
+/* This is the Input Hook part used for UI testing.
+ * You can follow the latest changes at:
+ * https://github.com/traitimtrongvag/Android-Imgui-Template/tree/Test-UI
+ */
+
  /////////////////////////////////////////////////////////////////////////////
  // nativeOnTouch - JNI bridge for motion events from Java                 //
  // Forwards ACTION_DOWN / ACTION_UP / ACTION_MOVE to ImGui's IO.         //
@@ -758,7 +753,7 @@ void* Init_Thread(void*) {
 
  JNIEXPORT jboolean JNICALL
  Java_com_unity3d_player_UnityPlayerActivity_nativeOnTouch(
- JNIEnv* env, jclass clazz, jobject motionEvent)
+   JNIEnv* env, jclass clazz, jobject motionEvent)
  {
    if (!setup || motionEvent == nullptr) return JNI_FALSE;
 

@@ -10,6 +10,32 @@
 #include "../ImGui/Icon_FA7.h"
 
 /////////////////////////////////////////////////////////////////////////////
+// Menu animation state                                                    //
+/////////////////////////////////////////////////////////////////////////////
+inline float   menuAnimationProgress = 0.0f;
+inline bool    menuOpening           = false;
+inline bool    menuClosing           = false;
+inline ImVec2  hideIconPos           = ImVec2(0, 0);
+inline ImVec2  menuPosition          = ImVec2(0, 0);
+inline ImVec2  menuOffset            = ImVec2(70, 0);
+inline bool    isDraggingMenu        = false;
+inline bool    shouldUpdateIconPosition = false;
+inline ImVec2  newIconPosition;
+
+/* Speed at which the menu opens/closes (units per second) */
+inline const float ANIMATION_SPEED = 2.4f;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Tab button animation state                                              //
+/////////////////////////////////////////////////////////////////////////////
+inline float buttonAnimTimes[10] = {0.0f};
+inline float tabSwitchAnim       = 1.0f;
+inline int   lastActiveTab       = -1;
+inline float clickWaveTime[10]   = {0.0f};
+inline bool  isButtonClicked[10] = {false};
+
+/////////////////////////////////////////////////////////////////////////////
 // Button descriptor - label shown on tab + its tab index                 //
 /////////////////////////////////////////////////////////////////////////////
 struct ButtonData {
