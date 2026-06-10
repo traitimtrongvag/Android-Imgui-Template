@@ -57,7 +57,6 @@ Push to main or master (or trigger manually from the Actions tab). The workflow 
 
 The included GitHub Actions workflow (.github/workflows/build-native.yml) build supported ABIs `arm64-v8a` on every push and exposes the resulting .so files as a downloadable artifact. No local NDK installation is required for a CI build.
 
-- **Latest Build**: Download from [jniLibs](app/src/main/jniLibs/)
 - **Latest Stable Build**: Download from [Releases](https://github.com/traitimtrongvag/Android-Imgui-Template/releases)
 
 ---
