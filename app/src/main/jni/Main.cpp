@@ -355,7 +355,6 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
                     if (err == std::string(OBFUSCATE("OK"))) {
                         isLogin          = bValid;
                         saveKey();
-                        startTime        = std::chrono::steady_clock::now();
                         showLoginSuccess = true;
                         ImGui::CloseCurrentPopup();
                     }
