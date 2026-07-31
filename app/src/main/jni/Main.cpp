@@ -29,6 +29,8 @@
 /////////////////////////////////////////////////////////////////////////////
 static bool  isLogin              = true;
 static bool  showLoginSuccess     = false;
+static float progress             = 1.0f;
+static auto  startTime            = std::chrono::steady_clock::now();
 
 static bool  attemptedAutoLogin   = false; 
 
@@ -287,6 +289,7 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
                     err = Login(g_s);
                     if (err == std::string(OBFUSCATE("OK"))) {
                         isLogin          = bValid;
+                        startTime        = std::chrono::steady_clock::now();
                         showLoginSuccess = true;
                     }
                     isLoggingIn = false;
@@ -324,11 +327,11 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
             }
 
             /* Login / Loading / Retry button label */
-            static float loginTimer    = 0.0f;
-            static float loadingTimer  = 0.0f;
+            static float loginTimer = 0.0f;
             std::string  buttonText;
             if (isLoggingIn) {
                 loginTimer += io.DeltaTime;
+                static float loadingTimer = 0.0f;
                 loadingTimer += io.DeltaTime;
                 int dots = (int)(loadingTimer * 2.0f) % 4;
                 buttonText = static_cast<const char*>(OBFUSCATE("Loading"));
@@ -345,9 +348,8 @@ EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
             }
 
             if (ImGui::Button(buttonText.c_str(), ImVec2(winWidth, 0)) && !isLoggingIn) {
-                isLoggingIn  = true;
-                loginTimer   = 0.0f;
-                loadingTimer = 0.0f;
+                isLoggingIn = true;
+                loginTimer  = 0.0f;
                 err.clear();
                 if (loginThread.joinable()) loginThread.join();
                 loginThread = std::thread([&]() {

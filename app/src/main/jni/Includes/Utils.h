@@ -48,11 +48,11 @@ DWORD findLibrary(const char *library) {
     return address;
 }
 
-uintptr_t getAbsoluteAddress(const char *libraryName, uintptr_t relativeAddr) {
+DWORD getAbsoluteAddress(const char *libraryName, DWORD relativeAddr) {
     uintptr_t libBase = findLibrary(libraryName);
     if (libBase == 0)
         return 0;
-    return (libBase + relativeAddr);
+    return (reinterpret_cast<DWORD>(libBase + relativeAddr));
 }
 
 bool isLibraryLoaded(const char *libraryName) {
