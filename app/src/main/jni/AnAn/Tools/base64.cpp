@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+// Modified: reject input lengths that cannot form a Base64 quantum.
+
  //
  // Depending on the url parameter in base64_chars, one of
  // two sets of base64 characters needs to be chosen.
@@ -178,6 +180,10 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
     }
 
     size_t length_of_string = encoded_string.length();
+    if (length_of_string % 4 == 1) {
+        throw std::runtime_error("Input is not valid base64-encoded data.");
+    }
+
     size_t pos = 0;
 
  //
