@@ -1,3 +1,4 @@
+
 name: Build Native
 
 on:
@@ -24,9 +25,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 12266719
+        uses: android-actions/setup-android@v4
 
       - name: Install Android NDK
         run: |
@@ -35,6 +34,7 @@ jobs:
       - name: Build Native Libraries
         run: |
           export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973
+
           $ANDROID_NDK_HOME/ndk-build \
             NDK_PROJECT_PATH=app/src/main \
             APP_BUILD_SCRIPT=app/src/main/jni/Android.mk \
@@ -43,20 +43,24 @@ jobs:
       - name: Create jniLibs and Copy .so Files
         run: |
           mkdir -p app/src/main/jniLibs
+
           if [ -d "app/src/main/libs" ]; then
-            cp -r app/src/main/libs/* app/src/main/jniLibs/
+            cp -a app/src/main/libs/. app/src/main/jniLibs/
           fi
 
       - name: Commit and Push .so Files
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
           rm -rf app/src/main/libs
-          git add -f app/src/main/jniLibs/**/*.so
-          if git diff --staged --quiet; then
-            exit 0
+
+          git add -f -A -- app/src/main/jniLibs/
+
+          if git diff --cached --quiet; then
+            echo "No native library changes"
           else
-            git commit -m "Update native libraries [skip ci]"
+            git commit -m "build: update native libraries [skip ci]"
             git push
           fi
 
@@ -64,5 +68,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-libs
-          path: |
-            app/src/main/jniLibs/**/*.so
+          path: app/src/main/jniLibs/**/*.so
+          if-no-files-found: error
